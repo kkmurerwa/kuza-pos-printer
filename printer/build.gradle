@@ -1,0 +1,70 @@
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+}
+
+android {
+    namespace 'com.kuzasystems.printer'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+
+        aarMetadata {
+            minCompileSdk 24
+        }
+
+        testFixtures {
+            enable true
+        }
+
+        publishing {
+            singleVariant('release') {
+                withSourcesJar()
+            }
+        }
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    buildFeatures {
+        viewBinding true
+        aidl true
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    implementation files('libs/ysdk_3.8.3e9b035_2010231412.jar') //morefun
+    implementation files('libs/zxing-core-3.3.0.jar') //cs 30
+    implementation files('libs/SmartPos_1.6.1_R221020.jar') //szzzcs m20
+}
+
+publishing {
+    publications {
+        release(MavenPublication) {
+            groupId = 'com.kuzasystems'
+            artifactId = 'posprinter'
+            version = '1.0.0'
+
+            afterEvaluate {
+                from components.release
+            }
+        }
+    }
+}
