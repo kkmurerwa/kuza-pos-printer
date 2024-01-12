@@ -9,18 +9,8 @@ android {
     defaultConfig {
         minSdk 24
 
-        aarMetadata {
-            minCompileSdk 24
-        }
-
         testFixtures {
             enable true
-        }
-
-        publishing {
-            singleVariant('release') {
-                withSourcesJar()
-            }
         }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
