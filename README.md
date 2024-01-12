@@ -30,7 +30,7 @@
 
 ## Adding Dependency to App
 
-1. In your project level `build.gradle` file, add the `mavenCentral()` and `maven { url 'https://jitpack.io' }` dependencies;
+1. In your project level `build.gradle` or `build.gradle.kts` file, add the `mavenCentral()` and `maven { url 'https://jitpack.io' }` dependencies. If you are using Gradle 6.8 and above, add the dependencies to the `settings.gradle` or `settings.gradle.kts` files.
 
    ```gradle
    allprojects {
