@@ -68,6 +68,7 @@ public class PosPrinter {
     public void initializePrinter(){
         setPrinterModel(getPrinterFromModelNo());
         switch (getPrinterModel().toUpperCase()){
+            case "CS50":
             case "CS30":{
                 posApiHelper = PosApiHelper.getInstance();
                 posApiHelper.PrintInit();
@@ -108,6 +109,7 @@ public class PosPrinter {
     @SuppressLint("RtlHardcoded")
     private void printEntry(PosPrinterEntry myEntry) {
             switch (getPrinterModel().toUpperCase()){
+            case "CS50":
             case "CS30":{
                 switch (myEntry.getAlignment()){
                     case "LEFT":{
@@ -200,6 +202,7 @@ public class PosPrinter {
 
     public void closePrinter(){
         switch (getPrinterModel().toUpperCase()){
+            case "CS50":
             case "CS30":{
                 for (int a=0;a<8;a++){
                     posApiHelper.PrintStr("\n");
