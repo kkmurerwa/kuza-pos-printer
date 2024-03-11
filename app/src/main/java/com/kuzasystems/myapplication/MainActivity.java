@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         entries.add(new PosPrinter.PosPrinterEntry("Origin: Embu",false, "LEFT","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry("Destination: NYERI LOWER",false, "LEFT","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry("Sender: David",false, "LEFT","STRING"));
+        entries.add(new PosPrinter.PosPrinterEntry("https://etims.kra.go.ke/common/link/etims/receipt/indexEtimsReceptData?P052261416J002CP2MEMHEZ2YUIRG",false, "LEFT","QR_CODE"));
         new PosPrinter().print(this,entries);
     }
 }

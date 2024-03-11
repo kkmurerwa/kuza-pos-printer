@@ -248,7 +248,7 @@ public class PosPrinter {
         @SuppressLint("SimpleDateFormat") SimpleDateFormat formatterTime = new SimpleDateFormat("HH:mm:ss");
         Date date = new Date();
         String printDate = formatter.format(date) + " " + formatterTime.format(date);
-        String company = "Kuza Systems and Solutions Ltd";
+        String company = "Software by: www.kuzasystems.com";
         printEntry(new PosPrinterEntry("Printed On: " + printDate, false, "CENTER","LINE")) ;
         printEntry(new PosPrinterEntry("Printed On: " + printDate, false, "CENTER","STRING")) ;
         printEntry(new PosPrinterEntry(company, false, "CENTER","STRING")) ;
