@@ -174,7 +174,7 @@ public class PosPrinter {
                     posApiHelper.PrintSetFont((byte) 24, (byte) 24, (byte) 0x00);
                     posApiHelper.PrintStr("- - - - - - - - - - - - - - - -\n");
                 }else if (myEntry.getType().equals("QR_CODE")){ //is qr code working.
-                    posApiHelper.PrintBarcode(myEntry.getEntry(), 360, 360, "QR_CODE");
+                    posApiHelper.PrintBarcode(myEntry.getEntry(), 250, 250, "QR_CODE");
                 }else {
                     posApiHelper.PrintStr(myEntry.getEntry());
                 }
