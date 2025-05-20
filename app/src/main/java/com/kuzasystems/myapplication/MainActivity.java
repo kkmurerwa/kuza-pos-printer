@@ -74,14 +74,16 @@ public class MainActivity extends AppCompatActivity {
         String line;
         line="- - - - - - - - - - - - - - - - - - - - - -";
         List<PosPrinter.PosPrinterEntry> entries = new ArrayList<>();
-        entries.add(new PosPrinter.PosPrinterEntry("****** REPRINTED ******",true, "CENTER","STRING"));
-        entries.add(new PosPrinter.PosPrinterEntry("*** PARCELS RECEIPT ***",true, "CENTER","STRING"));
+        entries.add(new PosPrinter.PosPrinterEntry("**** REPRINTED ****",true, "CENTER","STRING"));
+        entries.add(new PosPrinter.PosPrinterEntry("** PARCELS RECEIPT **",true, "CENTER","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry(line,true, "CENTER","LINE"));
-        entries.add(new PosPrinter.PosPrinterEntry("Tracking Number : 9256",true, "LEFT","STRING"));
+        entries.add(new PosPrinter.PosPrinterEntry("Tracking Number",true, "CENTER","STRING"));
+        entries.add(new PosPrinter.PosPrinterEntry("9256",true, "CENTER","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry("Origin: Embu",false, "LEFT","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry("Destination: NYERI LOWER",false, "LEFT","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry("Sender: David",false, "LEFT","STRING"));
-        entries.add(new PosPrinter.PosPrinterEntry("https://etims.kra.go.ke/common/link/etims/receipt/indexEtimsReceptData?P052261416J002CP2MEMHEZ2YUIRG",false, "LEFT","QR_CODE"));
+        //entries.add(new PosPrinter.PosPrinterEntry("https://etims.kra.go.ke/common/link/etims/receipt/indexEtimsReceptData?P052261416J002CP2MEMHEZ2YUIRG",false, "LEFT","QR_CODE"));
+        entries.add(new PosPrinter.PosPrinterEntry("1234567",false, "LEFT","QR_CODE"));
         new PosPrinter().print(this,entries);
     }
 }
