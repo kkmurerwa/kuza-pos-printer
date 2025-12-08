@@ -5,7 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -13,6 +16,9 @@ import android.os.RemoteException;
 import android.text.Layout;
 import android.util.Log;
 import android.view.Gravity;
+
+import androidx.core.content.FileProvider;
+
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.common.BitMatrix;
@@ -32,6 +38,8 @@ import com.zcs.sdk.print.PrnStrFormat;
 import com.zcs.sdk.print.PrnTextFont;
 import com.zcs.sdk.print.PrnTextStyle;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,6 +76,11 @@ public class PosPrinter {
     };
     private static MultipleAppPrinter printer;
     public static PrinterInterface printInterfaceService;
+    Bitmap bmp=null;
+    Canvas canvas =null;
+    int rawBTWidth = 384;  // 58mm RawBT width
+    int rawBTPadding = 10;
+    int rawBTYIndex = 50;
     List<MulPrintStrEntity> list = new ArrayList<>();
     private Context context;
 
@@ -132,7 +145,14 @@ public class PosPrinter {
                     printEntries();
                 }
                 break;
-            }default:break;
+            }default:{
+                Log.wtf("RAWBT","Am Initializing the printer");
+                bmp = Bitmap.createBitmap(rawBTWidth, 1400, Bitmap.Config.ARGB_8888);
+                canvas = new Canvas(bmp);
+                canvas.drawColor(Color.WHITE);
+                printEntries();
+                break;
+            }
 
         }
 
@@ -275,7 +295,37 @@ public class PosPrinter {
                 break;
             }
             default:{
-                Log.wtf("notSet","Device Not Set "+getPrinterModel().toUpperCase());
+                boolean bold = myEntry.bold;
+                if (myEntry.getType().equals("LINE")){
+                    bold= true;
+                }
+                Paint titlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                titlePaint.setTextSize(bold?27:21);
+                titlePaint.setColor(Color.BLACK);
+                int xIndex = rawBTPadding;
+
+              //  titlePaint.setTextAlign(myEntry.getAlignment().equalsIgnoreCase("CENTER")?Paint.Align.CENTER: Paint.Align.RIGHT);
+                if (bold) {
+                    titlePaint.setStyle(Paint.Style.FILL_AND_STROKE);
+                    titlePaint.setStrokeWidth(1.2f);
+                }
+                titlePaint.setFakeBoldText(false);
+                String myText = myEntry.getEntry();
+
+                try {
+                    if (myEntry.getType().equals("LINE")){
+                        myText="- - - - - - - - - - - - - - - - - - - - - - - - -";
+                        rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, rawBTPadding, rawBTYIndex, rawBTWidth - 20, myEntry.isBold()?32:28,myEntry.getAlignment());
+                    }else if(myEntry.getType().equals("QR_CODE")){
+                        Bitmap qr = generateQRCode(myText);
+                        canvas.drawBitmap(qr, (rawBTWidth - qr.getWidth()) / 2, rawBTYIndex, null);
+                        rawBTYIndex += qr.getHeight() + 40;
+                    }
+                    else {
+                        rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, xIndex, rawBTYIndex, rawBTWidth - 20, myEntry.isBold()?32:28,myEntry.getAlignment());
+                    }
+                    //printInterfaceService.printText_size_font(myText, fontSize, 1);
+                }catch (Exception ignored){}
                 break;
             }
 
@@ -327,8 +377,28 @@ public class PosPrinter {
                     printInterfaceService.printText("");
                 }catch (Exception ignored){}
             }
-
-            default:break;
+            default:{//send printing to raw bt
+                try{
+                    Log.wtf("RAWBT","Printing Via raw bt");
+                    File file = new File(context.getCacheDir(), "receipt.png");
+                    FileOutputStream fos = new FileOutputStream(file);
+                    bmp.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                    fos.close();
+                    Uri uri = FileProvider.getUriForFile(
+                            context,
+                            context.getPackageName() + ".provider",
+                            file
+                    );
+                    Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType("image/png");
+                    intent.setPackage("ru.a402d.rawbtprinter");
+                    intent.putExtra(Intent.EXTRA_STREAM, uri);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    context.startActivity(intent);
+                }catch (Exception ignored){
+                    ignored.printStackTrace();
+                }
+            };
 
         }
 
@@ -519,4 +589,51 @@ public class PosPrinter {
             return null;
         }
     }
+    public int drawWrappedText(Canvas canvas, String text, Paint paint,
+                               int x, int startY, int maxWidth, int lineHeight,
+                               String alignment) {
+
+        int y = startY;
+
+        String[] words = text.split(" ");
+        StringBuilder line = new StringBuilder();
+
+        for (String word : words) {
+            String testLine = line.length() == 0 ? word : line + " " + word;
+
+            if (paint.measureText(testLine) > maxWidth) {
+                // Draw the existing line with alignment
+                drawAlignedLine(canvas, line.toString(), paint, x, y, maxWidth, alignment);
+                y += lineHeight;
+
+                // Start new line
+                line = new StringBuilder(word);
+            } else {
+                line = new StringBuilder(testLine);
+            }
+        }
+
+        // Draw last line
+        if (line.length() > 0) {
+            drawAlignedLine(canvas, line.toString(), paint, x, y, maxWidth, alignment);
+            y += lineHeight;
+        }
+
+        return y;
+    }
+    private void drawAlignedLine(Canvas canvas, String text, Paint paint,
+                                 int x, int y, int maxWidth, String alignment) {
+
+        float lineWidth = paint.measureText(text);
+
+        if ("CENTER".equalsIgnoreCase(alignment)) {
+            float centerX = x + (maxWidth - lineWidth) / 2f;
+            canvas.drawText(text, centerX, y, paint);
+        } else {
+            // Default LEFT
+            canvas.drawText(text, x, y, paint);
+        }
+    }
+
+
 }
