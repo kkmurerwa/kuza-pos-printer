@@ -380,7 +380,8 @@ public class PosPrinter {
             default:{//send printing to raw bt
                 try{
                     Log.wtf("RAWBT","Printing Via raw bt");
-                    File file = new File(context.getCacheDir(), "receipt.png");
+                    File cacheDir = context.getCacheDir();  // <-- This now resolves to the app's cache
+                    File file = new File(cacheDir, "receipt.png");
                     FileOutputStream fos = new FileOutputStream(file);
                     bmp.compress(Bitmap.CompressFormat.PNG, 100, fos);
                     fos.close();
