@@ -314,7 +314,7 @@ public class PosPrinter {
 
                 try {
                     if (myEntry.getType().equals("LINE")){
-                        myText="- - - - - - - - - - - - - - - - - - - - - - - - -";
+                        myText="- - - - - - - - - - - - - - - - - -";
                         rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, rawBTPadding, rawBTYIndex, rawBTWidth - 20, 32,myEntry.getAlignment());
                     }else if(myEntry.getType().equals("QR_CODE")){
                         Bitmap qr = generateQRCode(myText);
