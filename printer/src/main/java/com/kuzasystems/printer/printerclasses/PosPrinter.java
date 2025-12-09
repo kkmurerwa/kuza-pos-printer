@@ -300,7 +300,7 @@ public class PosPrinter {
                     bold= true;
                 }
                 Paint titlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                titlePaint.setTextSize(bold?27:21);
+                titlePaint.setTextSize(bold?35:25);
                 titlePaint.setColor(Color.BLACK);
                 int xIndex = rawBTPadding;
 
@@ -315,14 +315,14 @@ public class PosPrinter {
                 try {
                     if (myEntry.getType().equals("LINE")){
                         myText="- - - - - - - - - - - - - - - - - - - - - - - - -";
-                        rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, rawBTPadding, rawBTYIndex, rawBTWidth - 20, myEntry.isBold()?32:28,myEntry.getAlignment());
+                        rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, rawBTPadding, rawBTYIndex, rawBTWidth - 20, 32,myEntry.getAlignment());
                     }else if(myEntry.getType().equals("QR_CODE")){
                         Bitmap qr = generateQRCode(myText);
                         canvas.drawBitmap(qr, (rawBTWidth - qr.getWidth()) / 2, rawBTYIndex, null);
                         rawBTYIndex += qr.getHeight() + 40;
                     }
                     else {
-                        rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, xIndex, rawBTYIndex, rawBTWidth - 20, myEntry.isBold()?32:28,myEntry.getAlignment());
+                        rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, xIndex, rawBTYIndex, rawBTWidth - 20, myEntry.isBold()?50:40,myEntry.getAlignment());
                     }
                     //printInterfaceService.printText_size_font(myText, fontSize, 1);
                 }catch (Exception ignored){}
