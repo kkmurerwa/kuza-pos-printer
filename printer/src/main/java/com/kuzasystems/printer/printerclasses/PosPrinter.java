@@ -384,11 +384,8 @@ public class PosPrinter {
                     FileOutputStream fos = new FileOutputStream(file);
                     bmp.compress(Bitmap.CompressFormat.PNG, 100, fos);
                     fos.close();
-                    Uri uri = FileProvider.getUriForFile(
-                            context,
-                            context.getPackageName() + ".provider",
-                            file
-                    );
+                    //Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
+                    Uri uri = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", file);
                     Intent intent = new Intent(Intent.ACTION_SEND);
                     intent.setType("image/png");
                     intent.setPackage("ru.a402d.rawbtprinter");
