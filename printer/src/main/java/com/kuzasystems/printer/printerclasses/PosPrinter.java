@@ -147,7 +147,7 @@ public class PosPrinter {
                 break;
             }default:{
                 Log.wtf("RAWBT","Am Initializing the printer");
-                bmp = Bitmap.createBitmap(rawBTWidth, 1400, Bitmap.Config.ARGB_8888);
+                bmp = Bitmap.createBitmap(rawBTWidth, 14000, Bitmap.Config.ARGB_8888);
                 canvas = new Canvas(bmp);
                 canvas.drawColor(Color.WHITE);
                 printEntries();
@@ -322,7 +322,7 @@ public class PosPrinter {
                         rawBTYIndex += qr.getHeight() + 40;
                     }
                     else {
-                        rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, xIndex, rawBTYIndex, rawBTWidth - 20, myEntry.isBold()?50:40,myEntry.getAlignment());
+                        rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, xIndex, rawBTYIndex, rawBTWidth - 20, myEntry.isBold()?45:35,myEntry.getAlignment());
                     }
                     //printInterfaceService.printText_size_font(myText, fontSize, 1);
                 }catch (Exception ignored){}
