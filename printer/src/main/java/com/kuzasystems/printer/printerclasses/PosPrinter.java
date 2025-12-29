@@ -147,7 +147,8 @@ public class PosPrinter {
                 break;
             }default:{
                 Log.wtf("RAWBT","Am Initializing the printer");
-                bmp = Bitmap.createBitmap(rawBTWidth, 14000, Bitmap.Config.ARGB_8888);
+                int estimatedHeight = getHeightEstimate();
+                bmp = Bitmap.createBitmap(rawBTWidth, estimatedHeight, Bitmap.Config.ARGB_8888);
                 canvas = new Canvas(bmp);
                 canvas.drawColor(Color.WHITE);
                 printEntries();
@@ -158,6 +159,20 @@ public class PosPrinter {
 
     }
 
+    private int getHeightEstimate() {
+        int estimate = 0;
+        int qrCodes=0;
+        int strings = 15;
+        for (PosPrinterEntry myEntry:this.getEntries()) {
+            if(myEntry.getType().equals("QR_CODE")){
+                qrCodes++;
+            }else{
+                strings++;
+            }
+        }
+        estimate= (qrCodes*360)+(strings*45);
+        return estimate;
+    }
 
 
     public void printEntries(){
