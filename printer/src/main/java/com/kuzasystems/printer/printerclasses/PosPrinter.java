@@ -1,5 +1,6 @@
 package com.kuzasystems.printer.printerclasses;
 import android.annotation.SuppressLint;
+import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -45,7 +46,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-
 public class PosPrinter {
     private static DeviceServiceEngine deviceServiceEngine;
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -100,6 +100,8 @@ public class PosPrinter {
     }
     PosApiHelper posApiHelper ;
     private Printer mPrinter;
+    IBinder h10Service;
+    recieptservice.com.recieptservice.PrinterInterface h10Aidl;
     public void setEntries(List<PosPrinterEntry> entries) {
         this.entries = entries;
     }
@@ -121,12 +123,22 @@ public class PosPrinter {
                 posApiHelper.PrintSetGray(5);
                 printEntries();
                 break;
-            }case "M20":{
+            }
+            case "H10S":{
+                if(h10Aidl==null){
+                    startH10Service();
+                }else{
+                    printEntries();
+                }
+                break;
+            }
+            case "M20":{
                 DriverManager mDriverManager = DriverManager.getInstance();
                 mPrinter = mDriverManager.getPrinter();
                 printEntries();
                 break;
-            }case "MF919":{
+            }
+            case "MF919":{
                 if (getDeviceService() == null) {
                     bindDeviceService(getContext());
                 }else{
@@ -184,179 +196,222 @@ public class PosPrinter {
     }
 
     @SuppressLint("RtlHardcoded")
-    private void printEntry(PosPrinterEntry myEntry) {
-            switch (getPrinterModel().toUpperCase()){
-            case "CS50":
-            case "CS30":{
-                switch (myEntry.getAlignment()){
-                    case "LEFT":{
-                        posApiHelper.PrintSetAlign(0);
-                        break;
-                    }case "CENTER":{
-                        posApiHelper.PrintSetAlign(1);
-                        break;
-                    }case "RIGHT":{
-                        posApiHelper.PrintSetAlign(2);
-                        break;
+    private void printEntry(PosPrinterEntry myEntry)  {
+        try {
+            switch (getPrinterModel().toUpperCase()) {
+                case "CS50":
+                case "CS30": {
+                    switch (myEntry.getAlignment()) {
+                        case "LEFT": {
+                            posApiHelper.PrintSetAlign(0);
+                            break;
+                        }
+                        case "CENTER": {
+                            posApiHelper.PrintSetAlign(1);
+                            break;
+                        }
+                        case "RIGHT": {
+                            posApiHelper.PrintSetAlign(2);
+                            break;
+                        }
                     }
-                }
-                if (myEntry.isBold()){
-                    posApiHelper.PrintSetFont((byte) 16, (byte) 16, (byte) 0x33);
-                }else{
-                    posApiHelper.PrintSetFont((byte) 24, (byte) 24, (byte) 0x00);
-                }
-                if (myEntry.getType().equals("LINE")){
-                    posApiHelper.PrintSetFont((byte) 24, (byte) 24, (byte) 0x00);
-                    posApiHelper.PrintStr("- - - - - - - - - - - - - - - -\n");
-                }else if (myEntry.getType().equals("QR_CODE")){ //is qr code working.
-                    posApiHelper.PrintBarcode(myEntry.getEntry(), 250, 250, "QR_CODE");
-                }else {
-                    posApiHelper.PrintStr(myEntry.getEntry());
-                }
-                break;
-            }
-            case "M20":{
-                PrnStrFormat format = new PrnStrFormat();
-                format.setFont(PrnTextFont.SERIF);
-                switch (myEntry.getAlignment()){
-                    case "LEFT":{
-                        format.setAli(Layout.Alignment.ALIGN_NORMAL);
-                        break;
-                    }case "CENTER":{
-                        format.setAli(Layout.Alignment.ALIGN_CENTER);
-                        break;
-                    }case "RIGHT":{
-                        format.setAli(Layout.Alignment.ALIGN_OPPOSITE);
-                        break;
+                    if (myEntry.isBold()) {
+                        posApiHelper.PrintSetFont((byte) 16, (byte) 16, (byte) 0x33);
+                    } else {
+                        posApiHelper.PrintSetFont((byte) 24, (byte) 24, (byte) 0x00);
                     }
+                    if (myEntry.getType().equals("LINE")) {
+                        posApiHelper.PrintSetFont((byte) 24, (byte) 24, (byte) 0x00);
+                        posApiHelper.PrintStr("- - - - - - - - - - - - - - - -\n");
+                    } else if (myEntry.getType().equals("QR_CODE")) { //is qr code working.
+                        posApiHelper.PrintBarcode(myEntry.getEntry(), 250, 250, "QR_CODE");
+                    } else {
+                        posApiHelper.PrintStr(myEntry.getEntry());
+                    }
+                    break;
                 }
-                if (myEntry.isBold()){
-                    format.setTextSize(30);
-                    format.setStyle(PrnTextStyle.BOLD);
-                }else{
-                    format.setTextSize(25);
-                    format.setStyle(PrnTextStyle.NORMAL);
+                case "M20": {
+                    PrnStrFormat format = new PrnStrFormat();
+                    format.setFont(PrnTextFont.SERIF);
+                    switch (myEntry.getAlignment()) {
+                        case "LEFT": {
+                            format.setAli(Layout.Alignment.ALIGN_NORMAL);
+                            break;
+                        }
+                        case "CENTER": {
+                            format.setAli(Layout.Alignment.ALIGN_CENTER);
+                            break;
+                        }
+                        case "RIGHT": {
+                            format.setAli(Layout.Alignment.ALIGN_OPPOSITE);
+                            break;
+                        }
+                    }
+                    if (myEntry.isBold()) {
+                        format.setTextSize(30);
+                        format.setStyle(PrnTextStyle.BOLD);
+                    } else {
+                        format.setTextSize(25);
+                        format.setStyle(PrnTextStyle.NORMAL);
+                    }
+                    if (myEntry.getType().equals("LINE")) {
+                        mPrinter.setPrintAppendString("- - - - - - - - - - - - - - - - - - - - - - - - - - -", format);
+                    } else {
+                        mPrinter.setPrintAppendString(myEntry.getEntry(), format);
+                    }
+                    //add else for qr code
+                    break;
                 }
-                if (myEntry.getType().equals("LINE")){
-                    mPrinter.setPrintAppendString("- - - - - - - - - - - - - - - - - - - - - - - - - - -", format);
-                }else {
-                    mPrinter.setPrintAppendString(myEntry.getEntry(), format);
-                }
-                break;
-            }
-            case "MF919":{
-                int gravity =0;
-                int fontSize;
-                    switch (myEntry.getAlignment()){
-                        case "LEFT":{
+                case "MF919": {
+                    int gravity = 0;
+                    int fontSize;
+                    switch (myEntry.getAlignment()) {
+                        case "LEFT": {
                             gravity = Gravity.LEFT;
                             break;
-                        }case "CENTER":{
+                        }
+                        case "CENTER": {
                             gravity = Gravity.CENTER;
                             break;
-                        }case "RIGHT":{
+                        }
+                        case "RIGHT": {
                             gravity = Gravity.RIGHT;
                             break;
                         }
                     }
-                    if (myEntry.isBold()){
-                        fontSize =  FontFamily.BIG;
-                    }else{
-                        fontSize =  FontFamily.MIDDLE;
+                    if (myEntry.isBold()) {
+                        fontSize = FontFamily.BIG;
+                    } else {
+                        fontSize = FontFamily.MIDDLE;
                     }
-                    if (myEntry.getType().equals("LINE")){
+                    if (myEntry.getType().equals("LINE")) {
                         list.add(new MulPrintStrEntity("- - - - - - - - - - - - - - - - - - - - - -",
                                 FontFamily.BIG, false, Gravity.CENTER));
-                    }else {
+                    } else {
                         list.add(new MulPrintStrEntity(myEntry.getEntry(),
-                                fontSize,false, gravity));
+                                fontSize, false, gravity));
                     }
 
-                break;
-            }
-            case "MP3_PLUS":{
-                int gravity =0;
-                int fontSize;
-                    switch (myEntry.getAlignment()){
-                        case "LEFT":{
+                    break;
+                }
+                case "MP3_PLUS": {
+                    int gravity = 0;
+                    int fontSize;
+                    switch (myEntry.getAlignment()) {
+                        case "LEFT": {
                             gravity = 0;
                             break;
-                        }case "CENTER":{
+                        }
+                        case "CENTER": {
                             gravity = 1;
                             break;
-                        }case "RIGHT":{
-                            gravity =2;
+                        }
+                        case "RIGHT": {
+                            gravity = 2;
                             break;
                         }
                     }
-                    if (myEntry.bold){
-                        fontSize =  FontFamily.MIDDLE;
-                    }else{
-                        fontSize =  FontFamily.SMALL;
+                    if (myEntry.bold) {
+                        fontSize = FontFamily.MIDDLE;
+                    } else {
+                        fontSize = FontFamily.SMALL;
                     }
                     String myText = myEntry.getEntry();
                     try {
-                    if (myEntry.getType().equals("LINE")){
-                        myText="- - - - - - - - - - - - - - - - - - - - -";
-                        printInterfaceService.printText_size_font(myText, FontFamily.SMALL, 1);
-                    }else if(myEntry.getType().equals("QR_CODE")){
-                        printInterfaceService.printBitmap_bDate(getPrintQRcodeByteArray(generateQRCode(myText)));
-                    }
-                    else {
-                        printInterfaceService.printText_FullParm(myText,  fontSize, 0,myEntry.bold?1:0 , gravity, myEntry.bold,false );
-                    }
+                        if (myEntry.getType().equals("LINE")) {
+                            myText = "- - - - - - - - - - - - - - - - - - - - -";
+                            printInterfaceService.printText_size_font(myText, FontFamily.SMALL, 1);
+                        } else if (myEntry.getType().equals("QR_CODE")) {
+                            printInterfaceService.printBitmap_bDate(getPrintQRcodeByteArray(generateQRCode(myText)));
+                        } else {
+                            printInterfaceService.printText_FullParm(myText, fontSize, 0, myEntry.bold ? 1 : 0, gravity, myEntry.bold, false);
+                        }
                         //printInterfaceService.printText_size_font(myText, fontSize, 1);
-                    }catch (Exception ignored){}
-                break;
-            }
-            default:{
-                boolean bold = myEntry.bold;
-                if (myEntry.getType().equals("LINE")){
-                    bold= true;
-                }
-                Paint titlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                titlePaint.setTextSize(bold?35:25);
-                titlePaint.setColor(Color.BLACK);
-                int xIndex = rawBTPadding;
-
-              //  titlePaint.setTextAlign(myEntry.getAlignment().equalsIgnoreCase("CENTER")?Paint.Align.CENTER: Paint.Align.RIGHT);
-                if (bold) {
-                    titlePaint.setStyle(Paint.Style.FILL_AND_STROKE);
-                    titlePaint.setStrokeWidth(1.2f);
-                }
-                titlePaint.setFakeBoldText(false);
-                String myText = myEntry.getEntry();
-
-                try {
-                    if (myEntry.getType().equals("LINE")){
-                        myText="- - - - - - - - - - - - - - - - - -";
-                        rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, rawBTPadding, rawBTYIndex, rawBTWidth - 20, 32,myEntry.getAlignment());
-                    }else if(myEntry.getType().equals("QR_CODE")){
-                        Bitmap qr = generateQRCode(myText);
-                        canvas.drawBitmap(qr, (rawBTWidth - qr.getWidth()) / 2, rawBTYIndex, null);
-                        rawBTYIndex += qr.getHeight() + 40;
+                    } catch (Exception ignored) {
                     }
-                    else {
-                        rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, xIndex, rawBTYIndex, rawBTWidth - 20, myEntry.isBold()?45:35,myEntry.getAlignment());
+                    break;
+                }
+                case "H10S": {
+                    switch (myEntry.getAlignment()) {
+                        case "LEFT": {
+                            h10Aidl.setAlignment(0);
+                            break;
+                        }
+                        case "CENTER": {
+                            h10Aidl.setAlignment(1);
+                            break;
+                        }
+                        case "RIGHT": {
+                            h10Aidl.setAlignment(2);
+                            break;
+                        }
                     }
-                    //printInterfaceService.printText_size_font(myText, fontSize, 1);
-                }catch (Exception ignored){}
-                break;
-            }
+                   int fontSize = myEntry.isBold()?35:24;
+                    h10Aidl.setTextSize(fontSize);
+                    h10Aidl.setTextBold(myEntry.isBold());
+                    if (myEntry.getType().equals("LINE")) {
+                        h10Aidl.setTextSize(24);
+                        h10Aidl.printText("- - - - - - - - - - - - - - - -");
+                    } else if (myEntry.getType().equals("QR_CODE")) { //is qr code working.
+                        h10Aidl.setAlignment(1);
+                        h10Aidl.printQRCode(myEntry.getEntry(), 7, 3);
+                    } else {
+                        h10Aidl.printText(myEntry.getEntry());
+                    }
+                    h10Aidl.printText("\n");
+                    break;
+                }
+                default: {
+                    boolean bold = myEntry.bold;
+                    if (myEntry.getType().equals("LINE")) {
+                        bold = true;
+                    }
+                    Paint titlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    titlePaint.setTextSize(bold ? 35 : 25);
+                    titlePaint.setColor(Color.BLACK);
+                    int xIndex = rawBTPadding;
 
+                    //  titlePaint.setTextAlign(myEntry.getAlignment().equalsIgnoreCase("CENTER")?Paint.Align.CENTER: Paint.Align.RIGHT);
+                    if (bold) {
+                        titlePaint.setStyle(Paint.Style.FILL_AND_STROKE);
+                        titlePaint.setStrokeWidth(1.2f);
+                    }
+                    titlePaint.setFakeBoldText(false);
+                    String myText = myEntry.getEntry();
+
+                    try {
+                        if (myEntry.getType().equals("LINE")) {
+                            myText = "- - - - - - - - - - - - - - - - - -";
+                            rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, rawBTPadding, rawBTYIndex, rawBTWidth - 20, 32, myEntry.getAlignment());
+                        } else if (myEntry.getType().equals("QR_CODE")) {
+                            Bitmap qr = generateQRCode(myText);
+                            canvas.drawBitmap(qr, (rawBTWidth - qr.getWidth()) / 2, rawBTYIndex, null);
+                            rawBTYIndex += qr.getHeight() + 40;
+                        } else {
+                            rawBTYIndex = drawWrappedText(canvas, myText, titlePaint, xIndex, rawBTYIndex, rawBTWidth - 20, myEntry.isBold() ? 45 : 35, myEntry.getAlignment());
+                        }
+                        //printInterfaceService.printText_size_font(myText, fontSize, 1);
+                    } catch (Exception ignored) {
+                    }
+                    break;
+                }
+            }
+        }catch (Exception error){
+            Log.wtf("PrintError",error.getMessage());
         }
     }
 
     public void closePrinter(){
-        switch (getPrinterModel().toUpperCase()){
+        switch (getPrinterModel().toUpperCase()) {
             case "CS50":
-            case "CS30":{
-                for (int a=0;a<8;a++){
+            case "CS30": {
+                for (int a = 0; a < 8; a++) {
                     posApiHelper.PrintStr("\n");
                 }
                 posApiHelper.PrintStart();
                 break;
-            }case "M20":{
+            }
+            case "M20": {
                 PrnStrFormat format = new PrnStrFormat();
                 format.setTextSize(30);
                 format.setAli(Layout.Alignment.ALIGN_CENTER);
@@ -365,7 +420,8 @@ public class PosPrinter {
                 mPrinter.setPrintAppendString("\n", format);
                 mPrinter.setPrintStart();
                 break;
-            }case "MF919":{
+            }
+            case "MF919": {
                 Bundle config = new Bundle();
                 config.putInt(PrinterConfig.COMMON_GRAYLEVEL, 200);
                 list.add(new MulPrintStrEntity("\n", FontFamily.BIG));
@@ -381,7 +437,8 @@ public class PosPrinter {
 
                 }
                 break;
-            } case  "MP3_PLUS":{
+            }
+            case "MP3_PLUS": {
                 try {
                     printInterfaceService.printEndLine();
                     printInterfaceService.printText("");
@@ -390,7 +447,18 @@ public class PosPrinter {
                     printInterfaceService.printText("");
                     printInterfaceService.printText("");
                     printInterfaceService.printText("");
-                }catch (Exception ignored){}
+                } catch (Exception ignored) {
+                }
+            }
+            case "H10S":{
+                try {
+                    for (int a = 0; a < 5; a++) {
+                        h10Aidl.printText("\n");
+                    }
+                }catch (Exception ignored){
+
+                }
+                break;
             }
             default:{//send printing to raw bt
                 try{
@@ -520,7 +588,6 @@ public class PosPrinter {
         intent.setAction(SERVICE_ACTION);
         String SERVICE_PACKAGE = "com.morefun.ysdk";
         intent.setPackage(SERVICE_PACKAGE);
-
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE);
     }
     public static Bitmap generateQRCode(String content) {
@@ -646,6 +713,22 @@ public class PosPrinter {
             // Default LEFT
             canvas.drawText(text, x, y, paint);
         }
+    }
+    public void startH10Service(){
+        Intent intent=new Intent();
+        intent.setClassName("recieptservice.com.recieptservice","recieptservice.com.recieptservice.service.PrinterService");
+        context.bindService(intent, new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, final IBinder service) {
+                h10Service = service;
+                h10Aidl= recieptservice.com.recieptservice.PrinterInterface.Stub.asInterface(h10Service);
+               printEntries();
+            }
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+
+            }
+        }, Service.BIND_AUTO_CREATE);
     }
 
 
