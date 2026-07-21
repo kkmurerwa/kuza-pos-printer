@@ -40,7 +40,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     implementation files('libs/ysdk_3.8.3e9b035_2010231412.jar') //morefun
-    implementation files('libs/h10s.jar') //h10
+   // implementation files('libs/h10s.jar') //h10
     implementation files('libs/zxing-core-3.3.0.jar') //cs 30
     implementation files('libs/SmartPos_1.6.1_R221020.jar') //szzzcs m20
     implementation files('libs/CS_API_AGO_MP3P.jar')//Mobi wire
