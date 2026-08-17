@@ -227,7 +227,7 @@ public class PosPrinter {
                         posApiHelper.PrintBarcode(myEntry.getEntry(), 360, 360, "QR_CODE");
                     } else {
                         posApiHelper.PrintStr(myEntry.getEntry());
-                        posApiHelper.PrintStr("\n");
+                        //posApiHelper.PrintStr("\n");
                     }
                     break;
                 }
