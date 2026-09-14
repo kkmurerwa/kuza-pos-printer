@@ -1,5 +1,7 @@
 package com.kuzasystems.myapplication;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -74,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         String line;
         line="- - - - - - - - - - - - - - - - - - - - - -";
         List<PosPrinter.PosPrinterEntry> entries = new ArrayList<>();
-        entries.add(new PosPrinter.PosPrinterEntry("MTN SACCO",true, "CENTER","STRING"));
+        /*entries.add(new PosPrinter.PosPrinterEntry("MTN SACCO",true, "CENTER","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry("**** REPRINTED ****",true, "CENTER","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry("** PARCELS RECEIPT **",true, "CENTER","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry(line,true, "CENTER","LINE"));
@@ -91,7 +93,20 @@ public class MainActivity extends AppCompatActivity {
         entries.add(new PosPrinter.PosPrinterEntry("Payment: Cash",false, "LEFT","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry(line,true, "CENTER","LINE"));
         entries.add(new PosPrinter.PosPrinterEntry(line,true, "CENTER","LINE"));
-        entries.add(new PosPrinter.PosPrinterEntry("https://etims.kra.go.ke/common/link/etims/receipt/indexEtimsReceptData?P052261416J002CP2MEMHEZ2YUIRG",false, "LEFT","QR_CODE"));
+        entries.add(new PosPrinter.PosPrinterEntry("https://etims.kra.go.ke/common/link/etims/receipt/indexEtimsReceptData?P052261416J002CP2MEMHEZ2YUIRG",false, "LEFT","QR_CODE"));*/
+       // Bitmap bitmap = BitmapFactory.decodeResource(getResources(),R.mipmap.enabled);
+        Bitmap original = BitmapFactory.decodeResource(
+                getResources(),
+                R.mipmap.gemini
+        );
+
+        Bitmap bitmap = Bitmap.createScaledBitmap(
+                original,
+                380,
+                268,
+                true
+        );
+        entries.add(new PosPrinter.PosPrinterEntry(bitmap));
         //entries.add(new PosPrinter.PosPrinterEntry("www.kuzasystems.com",false, "LEFT","QR_CODE"));
         new PosPrinter().print(this,entries);
        // new PosPrinter().printReceipt(this);

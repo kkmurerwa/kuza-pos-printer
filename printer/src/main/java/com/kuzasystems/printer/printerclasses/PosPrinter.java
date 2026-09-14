@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -225,6 +226,9 @@ public class PosPrinter {
                         posApiHelper.PrintStr("- - - - - - - - - - - - - - - -\n");
                     } else if (myEntry.getType().equals("QR_CODE")) { //is qr code working.
                         posApiHelper.PrintBarcode(myEntry.getEntry(), 360, 360, "QR_CODE");
+                    }else if (myEntry.getType().equals("IMAGE")) { //Print Image
+                        int response = posApiHelper.PrintBmp(myEntry.getDrawable());
+                        Log.d("PrintImage","Printing the image "+response);
                     } else {
                         posApiHelper.PrintStr(myEntry.getEntry());
                         //posApiHelper.PrintStr("\n");
@@ -508,7 +512,8 @@ public class PosPrinter {
         private final boolean bold;
 
         private final String alignment;// (left,center,right)
-        private final String type;// STRING,LINE,IMAGE,QRCODE
+        private final String type;// STRING,LINE,IMAGE,QRCODE,IMAGE
+        private Bitmap drawable;
 
 
         public PosPrinterEntry(String entry, boolean bold, String alignment,String type) {
@@ -516,6 +521,12 @@ public class PosPrinter {
             this.bold = bold;
             this.alignment = alignment;
             this.type = type;
+        }public PosPrinterEntry(Bitmap myDrawable) {
+            this.entry = "";
+            this.bold = false;
+            this.alignment = "CENTER";
+            this.type = "IMAGE";
+            this.drawable = myDrawable;
         }
 
         public String getEntry() {
@@ -533,6 +544,14 @@ public class PosPrinter {
 
         public String getType() {
             return type;
+        }
+
+        public Bitmap getDrawable() {
+            return drawable;
+        }
+
+        public void setDrawable(Bitmap drawable) {
+            this.drawable = drawable;
         }
     }
     public static String getPrinterFromModelNo(){
