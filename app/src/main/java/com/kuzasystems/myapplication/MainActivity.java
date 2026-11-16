@@ -1,8 +1,13 @@
 package com.kuzasystems.myapplication;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -15,6 +20,7 @@ import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.snackbar.Snackbar;
 import com.kuzasystems.myapplication.databinding.ActivityMainBinding;
 import com.kuzasystems.printer.printerclasses.PosPrinter;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +42,6 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-
         binding.fab.setOnClickListener(view -> {
             universalPrinter();
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
@@ -76,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
         String line;
         line="- - - - - - - - - - - - - - - - - - - - - -";
         List<PosPrinter.PosPrinterEntry> entries = new ArrayList<>();
-        /*entries.add(new PosPrinter.PosPrinterEntry("MTN SACCO",true, "CENTER","STRING"));
+        entries.add(new PosPrinter.PosPrinterEntry("MTN SACCO",true, "CENTER","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry("**** REPRINTED ****",true, "CENTER","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry("** PARCELS RECEIPT **",true, "CENTER","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry(line,true, "CENTER","LINE"));
@@ -93,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
         entries.add(new PosPrinter.PosPrinterEntry("Payment: Cash",false, "LEFT","STRING"));
         entries.add(new PosPrinter.PosPrinterEntry(line,true, "CENTER","LINE"));
         entries.add(new PosPrinter.PosPrinterEntry(line,true, "CENTER","LINE"));
-        entries.add(new PosPrinter.PosPrinterEntry("https://etims.kra.go.ke/common/link/etims/receipt/indexEtimsReceptData?P052261416J002CP2MEMHEZ2YUIRG",false, "LEFT","QR_CODE"));*/
+        entries.add(new PosPrinter.PosPrinterEntry("https://etims.kra.go.ke/common/link/etims/receipt/indexEtimsReceptData?P052261416J002CP2MEMHEZ2YUIRG",false, "LEFT","QR_CODE"));
        // Bitmap bitmap = BitmapFactory.decodeResource(getResources(),R.mipmap.enabled);
         Bitmap original = BitmapFactory.decodeResource(
                 getResources(),
@@ -103,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
         Bitmap bitmap = Bitmap.createScaledBitmap(
                 original,
                 380,
-                268,
+                150,
                 true
         );
         entries.add(new PosPrinter.PosPrinterEntry(bitmap));

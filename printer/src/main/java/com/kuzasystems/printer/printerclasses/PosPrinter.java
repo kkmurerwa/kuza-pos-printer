@@ -40,6 +40,9 @@ import com.zcs.sdk.print.PrnStrFormat;
 import com.zcs.sdk.print.PrnTextFont;
 import com.zcs.sdk.print.PrnTextStyle;
 
+
+import net.nyx.printerservice.print.IPrinterService;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
@@ -48,7 +51,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 public class PosPrinter {
-    private static DeviceServiceEngine deviceServiceEngine;
+    private static DeviceServiceEngine MF919DeviceServiceEngine;
+    IPrinterService NB55Service;
     private ServiceConnection serviceConnection = new ServiceConnection() {
         public void onServiceDisconnected(ComponentName componentName) {
             printInterfaceService = null;
@@ -58,23 +62,32 @@ public class PosPrinter {
             printInterfaceService = PrinterInterface.Stub.asInterface(iBinder);
             Log.wtf("Service Connected", "Service Connected Successfully");
             printEntries();
-            /*try {
-                printInterfaceService.printText("Hello Victor");
-                printInterfaceService.printText("Hello Victor");
-                printInterfaceService.printText("Hello Victor");
-                printInterfaceService.printText("Hello Victor");
-                printInterfaceService.printText("Hello Victor");
-                printInterfaceService.printText_isBold("Hello Victor",true);
-                printInterfaceService.printText_size("Hello Victor",20);
-                printInterfaceService.printEndLine();
-                printInterfaceService.printText("");
-                printInterfaceService.printText("");
-                printInterfaceService.printText("");
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }*/
         }
     };
+    private ServiceConnection NB55Connection = new ServiceConnection() {
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.wtf("ServiceDisconnected","printer service disconnected, try reconnect");
+            NB55Service = null;
+        }
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.wtf("Service Connected","Service Connected");
+            NB55Service = IPrinterService.Stub.asInterface(service);
+            printEntries();
+        }
+    };
+    private void bindServiceNB55(Context context) {
+        Intent intent = new Intent();
+        intent.setPackage("com.incar.printerservice");
+        intent.setAction("com.incar.printerservice.IPrinterService");
+        context.bindService(intent, NB55Connection, Context.BIND_AUTO_CREATE);
+    }
+
+    private void unbindServiceNB55(Context context) {
+        context.unbindService(NB55Connection);
+    }
     private static MultipleAppPrinter printer;
     public static PrinterInterface printInterfaceService;
     Bitmap bmp=null;
@@ -103,6 +116,7 @@ public class PosPrinter {
     private Printer mPrinter;
     IBinder h10Service;
     recieptservice.com.recieptservice.PrinterInterface h10Aidl;
+
     public void setEntries(List<PosPrinterEntry> entries) {
         this.entries = entries;
     }
@@ -140,16 +154,28 @@ public class PosPrinter {
                 break;
             }
             case "MF919":{
-                if (getDeviceService() == null) {
+                if (MF919DeviceServiceEngine == null) {
                     bindDeviceService(getContext());
                 }else{
                     try {
-                        printer = getDeviceService().getMultipleAppPrinter();
+                        printer = MF919DeviceServiceEngine.getMultipleAppPrinter();
                         printEntries();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
+                break;
+            }case "NB55":{
+               // if (MF919DeviceServiceEngine == null) {
+                    bindServiceNB55(getContext());
+               /* }else{
+                    try {
+                        printer = MF919DeviceServiceEngine.getMultipleAppPrinter();
+                        printEntries();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }*/
                 break;
             }case "MP3_PLUS":{
                 if (printInterfaceService==null){
@@ -299,6 +325,44 @@ public class PosPrinter {
 
                     break;
                 }
+                case "NB55": {
+                    PrintTextFormat textFormat = new PrintTextFormat();
+                    switch (myEntry.getAlignment()) {
+                        case "LEFT": {
+                            textFormat.setAli(0);
+                            break;
+                        }
+                        case "CENTER": {
+                            textFormat.setAli(1);
+                            break;
+                        }
+                        case "RIGHT": {
+                            textFormat.setAli(2);
+                            break;
+                        }
+                    }
+                    if (myEntry.isBold()){
+                        textFormat.setTextSize(40);
+                        textFormat.setStyle(1);
+                    }else{
+                        textFormat.setTextSize(30);
+                        textFormat.setStyle(0);
+                    }
+                    if (myEntry.getType().equals("LINE")) {
+                        PrintTextFormat lineTextFormat = new PrintTextFormat();
+                        lineTextFormat.setAli(1);
+                        lineTextFormat.setStyle(0);
+                        lineTextFormat.setTextSize(30);
+                        NB55Service.printText("- - - - - - - - - - - - - - - - - - - -", textFormat);
+                    } else if (myEntry.getType().equals("QR_CODE")) { //is qr code working.
+                        NB55Service.printQrCode(myEntry.getEntry(), 360, 360, 1);
+                    }else if (myEntry.getType().equals("IMAGE")) { //Print Image
+                        NB55Service.printBitmap(myEntry.getDrawable(),1,1);
+                    } else {
+                        NB55Service.printText(myEntry.getEntry(), textFormat);
+                    }
+                    break;
+                }
                 case "MP3_PLUS": {
                     int gravity = 0;
                     int fontSize;
@@ -415,6 +479,15 @@ public class PosPrinter {
                 }
                 posApiHelper.PrintStart();
                 break;
+            }case "NB55": {
+                try {
+                    PrintTextFormat textFormat = new PrintTextFormat();
+                    NB55Service.printText("\n", textFormat);
+                    NB55Service.printEndAutoOut();
+                    break;
+                }catch (Exception ignored){
+
+                }
             }
             case "M20": {
                 PrnStrFormat format = new PrnStrFormat();
@@ -563,26 +636,24 @@ public class PosPrinter {
         }
         return "";
     }
-    public static DeviceServiceEngine getDeviceService() {
-        return deviceServiceEngine;
-    }
+
     public void bindDeviceService(Context context) {
-        if (null != deviceServiceEngine) {
+        if (null != MF919DeviceServiceEngine) {
             return;
         }
 
         final ServiceConnection connection = new ServiceConnection() {
             @Override
             public void onServiceDisconnected(ComponentName name) {
-                deviceServiceEngine = null;
+                MF919DeviceServiceEngine = null;
                 Log.e("Transaction Fragment", "======onServiceDisconnected======");
             }
 
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
-                deviceServiceEngine = DeviceServiceEngine.Stub.asInterface(service);
+                MF919DeviceServiceEngine = DeviceServiceEngine.Stub.asInterface(service);
                 try {
-                    printer = getDeviceService().getMultipleAppPrinter();
+                    printer = MF919DeviceServiceEngine.getMultipleAppPrinter();
                     printEntries();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -594,7 +665,7 @@ public class PosPrinter {
             private void linkToDeath(IBinder service) {
                 try {
                     service.linkToDeath(() -> {
-                        deviceServiceEngine = null;
+                        MF919DeviceServiceEngine = null;
                         bindDeviceService(context);
                     }, 0);
                 } catch (RemoteException e) {
