@@ -1,4 +1,5 @@
 package com.kuzasystems.printer.printerclasses;
+
 import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.ComponentName;
@@ -6,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -21,6 +21,7 @@ import android.view.Gravity;
 
 import androidx.core.content.FileProvider;
 
+import com.ciontek.hardware.aidl.print.PrinterOpt;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.common.BitMatrix;
@@ -39,10 +40,7 @@ import com.zcs.sdk.Printer;
 import com.zcs.sdk.print.PrnStrFormat;
 import com.zcs.sdk.print.PrnTextFont;
 import com.zcs.sdk.print.PrnTextStyle;
-
-
 import net.nyx.printerservice.print.IPrinterService;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
@@ -50,6 +48,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+
+import pos.paylib.posPayKernel;
+
 public class PosPrinter {
     private static DeviceServiceEngine MF919DeviceServiceEngine;
     IPrinterService NB55Service;
@@ -78,6 +79,8 @@ public class PosPrinter {
             printEntries();
         }
     };
+    public PrinterOpt cs50CPrinter;//cs50 is cs 30 android 14
+    private posPayKernel mPosPayKernel;
     private void bindServiceNB55(Context context) {
         Intent intent = new Intent();
         intent.setPackage("com.incar.printerservice");
@@ -139,6 +142,14 @@ public class PosPrinter {
                 printEntries();
                 break;
             }
+            case "CS50C":{
+                mPosPayKernel = posPayKernel.getInstance();
+                try{
+                    mPosPayKernel.destroyPaySDK();
+                }catch (Exception ignored){}
+                mPosPayKernel.initPaySDK(context, getConnectCallBack());
+                break;
+            }
             case "H10S":{
                 if(h10Aidl==null){
                     startH10Service();
@@ -165,26 +176,20 @@ public class PosPrinter {
                     }
                 }
                 break;
-            }case "NB55":{
-               // if (MF919DeviceServiceEngine == null) {
-                    bindServiceNB55(getContext());
-               /* }else{
-                    try {
-                        printer = MF919DeviceServiceEngine.getMultipleAppPrinter();
-                        printEntries();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }*/
+            }
+            case "NB55":{
+                bindServiceNB55(getContext());
                 break;
-            }case "MP3_PLUS":{
+            }
+            case "MP3_PLUS":{
                 if (printInterfaceService==null){
                     context.bindService(PrinterServiceUtil.getPrintIntent(), this.serviceConnection, Context.BIND_AUTO_CREATE);
                 }else{
                     printEntries();
                 }
                 break;
-            }default:{
+            }
+            default:{
                 Log.wtf("RAWBT","Am Initializing the printer");
                 int estimatedHeight = getHeightEstimate();
                 bmp = Bitmap.createBitmap(rawBTWidth, estimatedHeight, Bitmap.Config.ARGB_8888);
@@ -257,6 +262,43 @@ public class PosPrinter {
                         Log.d("PrintImage","Printing the image "+response);
                     } else {
                         posApiHelper.PrintStr(myEntry.getEntry());
+                        //posApiHelper.PrintStr("\n");
+                    }
+                    break;
+                }
+                case "CS50C":{
+                    switch (myEntry.getAlignment()) {
+                        case "LEFT": {
+                            cs50CPrinter.PrnSetAlign(0);
+                            break;
+                        }
+                        case "CENTER": {
+                            cs50CPrinter.PrnSetAlign(1);
+                            break;
+                        }
+                        case "RIGHT": {
+                            cs50CPrinter.PrnSetAlign(2);
+                            break;
+                        }
+                    }
+                    if (myEntry.isBold()) {
+                        cs50CPrinter.PrnSetFont((byte) 16, (byte) 16, (byte) 0x33);
+                        cs50CPrinter.PrnSetBold(1);
+                    } else {
+                        cs50CPrinter.PrnSetFont((byte) 24, (byte) 24, (byte) 0x00);
+                        cs50CPrinter.PrnSetBold(0);
+                    }
+                    if (myEntry.getType().equals("LINE")) {
+                        cs50CPrinter.PrnSetBold(0);
+                        cs50CPrinter.PrnSetAlign(1);
+                        cs50CPrinter.PrnSetFont((byte) 24, (byte) 24, (byte) 0x00);
+                        cs50CPrinter.PrnStr("- - - - - - - - - - - - - - - - - -\n");
+                    } else if (myEntry.getType().equals("QR_CODE")) { //is qr code working.
+                        cs50CPrinter.PrnBarcode(myEntry.getEntry(), 360, 360, "QR_CODE");
+                    }else if (myEntry.getType().equals("IMAGE")) { //Print Image
+                        cs50CPrinter.PrnBmp(myEntry.getDrawable());
+                    } else {
+                        cs50CPrinter.PrnStr(myEntry.getEntry());
                         //posApiHelper.PrintStr("\n");
                     }
                     break;
@@ -479,7 +521,19 @@ public class PosPrinter {
                 }
                 posApiHelper.PrintStart();
                 break;
-            }case "NB55": {
+            }
+            case "CS50C":{
+                try {
+                    for (int a = 0; a < 8; a++) {
+                        cs50CPrinter.PrnStr("\n");
+                    }
+                    cs50CPrinter.PrnStart();
+                }catch (Exception ignored){
+
+                }
+                break;
+            }
+            case "NB55": {
                 try {
                     PrintTextFormat textFormat = new PrintTextFormat();
                     NB55Service.printText("\n", textFormat);
@@ -821,6 +875,24 @@ public class PosPrinter {
             }
         }, Service.BIND_AUTO_CREATE);
     }
+    public  posPayKernel.ConnectCallback getConnectCallBack(){
+        return new posPayKernel.ConnectCallback() {
+            @Override
+            public void onConnectPaySDK() {
+                try {
+                    cs50CPrinter = mPosPayKernel.mPrintOpt;
+                    cs50CPrinter.PrnSetGray(1);
+                    printEntries();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            @Override
+            public void onDisconnectPaySDK() {
+                cs50CPrinter = null;
+            }
 
+        };
+    }
 
 }
